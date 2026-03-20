@@ -31,25 +31,21 @@ class PixiStartupActivity : ProjectActivity {
             return
         }
 
-        ApplicationManager.getApplication().invokeLater {
+        // Add all found environments as SDKs
+        val addedSdks = envs.mapNotNull { (envName, pythonPath) ->
+            addPythonSdk(project, envName, pythonPath)
+        }
 
-            // Add all found environments as SDKs
-            val addedSdks = envs.mapNotNull { (envName, pythonPath) ->
-                addPythonSdk(project, envName, pythonPath)
-            }
+        val currentSdk = ProjectRootManager.getInstance(project).projectSdk
+        if (currentSdk?.homePath?.startsWith(FileUtil.toSystemIndependentName(pixiDir.absolutePath)) == true) {
+            // Already has current .pixi env registered
+            return
+        }
 
-            val currentSdk = ProjectRootManager.getInstance(project).projectSdk
-            if (currentSdk?.homePath?.startsWith(FileUtil.toSystemIndependentName(pixiDir.absolutePath)) == true) {
-                // Already has current .pixi env registered
-                return@invokeLater
-            }
-
-            // Set the 'default' environment as project SDK if it exists, otherwise the first one.
-            if (addedSdks.isNotEmpty()) {
-                val defaultSdk = addedSdks.find { it.name.endsWith("-pixi-default") } ?: addedSdks.first()
-                setProjectSdk(project, defaultSdk)
-            }
-
+        // Set the 'default' environment as project SDK if it exists, otherwise the first one.
+        if (addedSdks.isNotEmpty()) {
+            val defaultSdk = addedSdks.find { it.name.endsWith("-pixi-default") } ?: addedSdks.first()
+            setProjectSdk(project, defaultSdk)
         }
     }
 
@@ -111,16 +107,18 @@ class PixiStartupActivity : ProjectActivity {
         val sdk = jdkTable.createSdk(sdkName, pySdkType)
         val version = pySdkType.getVersionString(pythonPath)
 
-        ApplicationManager.getApplication().runWriteAction {
-            jdkTable.addJdk(sdk)
+        ApplicationManager.getApplication().invokeLater {
+            ApplicationManager.getApplication().runWriteAction {
+                jdkTable.addJdk(sdk)
 
-            val modificator = sdk.sdkModificator
-            modificator.homePath = pythonPath
-            modificator.versionString = version
+                val modificator = sdk.sdkModificator
+                modificator.homePath = pythonPath
+                modificator.versionString = version
 
-            associateModulePath(modificator, project.basePath)
+                associateModulePath(modificator, project.basePath)
 
-            modificator.commitChanges()
+                modificator.commitChanges()
+            }
         }
         thisLogger().info("SUCCESS: Created Python SDK: ${sdk.name}")
 
@@ -131,8 +129,10 @@ class PixiStartupActivity : ProjectActivity {
      * Set the given SDK as the project SDK.
      */
     private fun setProjectSdk(project: Project, sdk: Sdk) {
-        ApplicationManager.getApplication().runWriteAction {
-            ProjectRootManager.getInstance(project).projectSdk = sdk
+        ApplicationManager.getApplication().invokeLater {
+            ApplicationManager.getApplication().runWriteAction {
+                ProjectRootManager.getInstance(project).projectSdk = sdk
+            }
         }
         thisLogger().info("SUCCESS: Project '${project.name}' is now using SDK: ${sdk.name}")
     }
