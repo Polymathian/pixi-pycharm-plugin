@@ -17,6 +17,10 @@ import java.io.File
 class PixiStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         thisLogger().info("PixiStartupActivity.execute called for project: ${project.name}")
+
+        // Ensure PixiRunConfigListener is instantiated for this project
+        project.getService(PixiRunConfigListener::class.java)
+
         val projectDir = File(project.basePath ?: return)
         val pixiDir = File(projectDir, ".pixi")
         if (!pixiDir.exists()) {
