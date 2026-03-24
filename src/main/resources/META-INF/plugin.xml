@@ -10,4 +10,8 @@
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.deswik.plugins.pixienv.PixiStartupActivity" />
     </extensions>
+    <extensions defaultExtensionNs="Pythonid">
+        <!--suppress PluginXmlValidity -->
+        <pythonCommandLineTargetEnvironmentProvider implementation="com.deswik.plugins.pixienv.PixiEnvironmentProvider" />
+    </extensions>
 </idea-plugin>

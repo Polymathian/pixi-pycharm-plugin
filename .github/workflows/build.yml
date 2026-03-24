@@ -17,8 +17,14 @@ on:
   # Trigger the workflow on pushes to only the 'master' branch (this avoids duplicate checks being run e.g., for dependabot pull requests)
   push:
     branches: [ master ]
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
   # Trigger the workflow on any pull request
   pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'CHANGELOG.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -58,11 +64,11 @@ jobs:
       - name: Build plugin
         run: ./gradlew buildPlugin
 
-      # Upload the plugin zip as an artifact for later use in releaseDraft
+      # Upload the plugin zip
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v7
         with:
-          #archive: false
+          archive: false
           name: plugin-dist
           path: build/distributions/*.zip
 
@@ -244,13 +250,13 @@ jobs:
           ./gradlew getChangelog --unreleased --no-header --quiet --console=plain --output-file=$RELEASE_NOTE
           echo "release_note_path=$RELEASE_NOTE" >> $GITHUB_OUTPUT
 
-      # Download the plugin artifact from the build job
-      - name: Download plugin artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: plugin-dist
-          path: build/distributions
-          #skip-decompress: true
+      # # Download the plugin artifact from the build job
+      # - name: Download plugin artifact
+      #   uses: actions/download-artifact@v8
+      #   with:
+      #     name: plugin-dist
+      #     path: build/distributions
+      #     #skip-decompress: true
 
       - name: Create Release Draft
         uses: softprops/action-gh-release@v2
@@ -259,6 +265,6 @@ jobs:
           name: ${{ steps.version_notes.outputs.version }}
           body_path: ${{ steps.version_notes.outputs.release_note_path }}
           draft: true
-          files: build/distributions/*.zip
+          # files: build/distributions/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
