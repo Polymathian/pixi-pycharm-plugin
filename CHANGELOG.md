@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Added
+- Automatically mark `.pixi` directory as excluded
+
+### Modified
+- RunConfigListener replaced with PythonCommandLineTargetEnvironmentProvider. This avoids modifying run profile xml files
+
 ## [0.0.2]
 
 ### Added
