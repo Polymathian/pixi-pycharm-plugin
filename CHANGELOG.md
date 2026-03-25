@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Added
+- `PyPixiEnvSdkFlavor` to register pixi sdk, existing sdks should update automatically
+
+### Modified
+- Instead of intecting paths, wrap the call with `pixi run --`
+
 ## [0.0.3] - 2026-03-24
 
 ### Added
