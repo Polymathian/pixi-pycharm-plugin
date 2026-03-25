@@ -11,7 +11,6 @@
         <postStartupActivity implementation="com.deswik.plugins.pixienv.PixiStartupActivity" />
     </extensions>
     <extensions defaultExtensionNs="Pythonid">
-        <!--suppress PluginXmlValidity -->
         <pythonFlavorProvider implementation="com.deswik.plugins.pixienv.PixiEnvSdkFlavorProvider" />
     </extensions>
 </idea-plugin>
