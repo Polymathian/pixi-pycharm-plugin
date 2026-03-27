@@ -4,11 +4,15 @@
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-03-27
+
 ### Added
+
 - `PyPixiEnvSdkFlavor` to register pixi sdk, existing sdks should update automatically  
 This also avoids using internal extension points, improving future maintainability
 
 ### Modified
+
 - Instead of injecting paths, wrap the call with `pixi run --environment {env} -- {command}`
 
 ## [0.0.3] - 2026-03-24
@@ -35,7 +39,8 @@ This also avoids using internal extension points, improving future maintainabili
 - Basic functionality - detect all pixi environments in the current project, and add them to PyCharm
 - GitHub Actions to automate testing and deployment
 
-[Unreleased]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.3...HEAD
+[Unreleased]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.4...HEAD
+[0.0.4]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.3...0.0.4
 [0.0.3]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.2...0.0.3
 [0.0.2]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.1...0.0.2
 [0.0.1]: https://github.com/Polymathian/pixi-pycharm-plugin/commits/0.0.1
