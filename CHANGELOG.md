@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+### Modified
+
+- Updated gradle to 9.4
+- Dropped support for 2025.2, minimal supported version now is 2023.3
+
+### Added
+
+- `PixiPackageManager` to fetch a list of installed packages. This is required for automatic tools (like pytest) detection  
+Package Manager is created dynamically to ensure compatibility with 2025.3 as well as 2026.1
+
 ## [0.0.4] - 2026-03-27
 
 ### Added

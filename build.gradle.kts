@@ -30,6 +30,9 @@ repositories {
 
 // Dependencies are managed with Gradle version catalog - read more: https://docs.gradle.org/current/userguide/version_catalogs.html
 dependencies {
+    // ByteBuddy for runtime class generation to handle version compatibility
+    implementation("net.bytebuddy:byte-buddy:1.14.11")
+
     testImplementation(libs.junit)
     testImplementation(libs.opentest4j)
 

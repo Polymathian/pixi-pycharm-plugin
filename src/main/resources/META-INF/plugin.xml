@@ -12,5 +12,7 @@
     </extensions>
     <extensions defaultExtensionNs="Pythonid">
         <pythonFlavorProvider implementation="com.deswik.plugins.pixienv.PixiEnvSdkFlavorProvider" />
+        <!--suppress PluginXmlValidity -->
+        <pythonPackageManagerProvider implementation="com.deswik.plugins.pixienv.PixiPackageManagerProvider" />
     </extensions>
 </idea-plugin>

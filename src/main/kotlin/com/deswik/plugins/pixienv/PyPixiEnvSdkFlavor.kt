@@ -13,8 +13,7 @@ object PyPixiEnvSdkFlavor : CPythonSdkFlavor<PyPixiFlavorData>() {
 }
 
 internal class PixiEnvSdkFlavorProvider : PythonFlavorProvider {
-    override fun getFlavor(p0: Boolean): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
+    fun getFlavor(p0: Boolean): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
 
-    // Needed for latest PyCharm versions, but not for older ones.
-    public fun getFlavor(): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
+    override fun getFlavor(): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
 }
