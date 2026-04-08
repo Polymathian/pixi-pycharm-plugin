@@ -146,10 +146,7 @@ class PixiStartupActivity : ProjectActivity {
             modificator.homePath = pythonPath
             modificator.versionString = version
 
-            var additionalData = modificator.sdkAdditionalData as? PythonSdkAdditionalData
-            if (additionalData == null) {
-                additionalData = PythonSdkAdditionalData(PyFlavorAndData(PyPixiFlavorData(env), PyPixiEnvSdkFlavor))
-            }
+            val additionalData = PythonSdkAdditionalData(PyFlavorAndData(PyPixiFlavorData(env), PyPixiEnvSdkFlavor))
 
             @Suppress("UnstableApiUsage")
             try {
