@@ -11,6 +11,7 @@ import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectRootManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.PyFlavorAndData
@@ -20,18 +21,13 @@ class PixiStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         thisLogger().info("PixiStartupActivity.execute called for project: ${project.name}")
 
-        val projectDir = project.basePath?.let { File(it) } ?: run {
-            thisLogger().warn("Project basePath is null. Skipping Pixi setup.")
-            return
-        }
-        val pixiDir = File(projectDir, ".pixi")
-        if (!pixiDir.exists()) {
-            thisLogger().info("No .pixi directory found in project ${project.name}. Skipping Pixi SDK setup.")
+        val pixiRoots = findPixiRoots(project)
+        if (pixiRoots.isEmpty()) {
+            thisLogger().info("No .pixi directories found in project ${project.name}. Skipping Pixi SDK setup.")
             return
         }
 
-        // Get all pixi environments with python installed using PyPixiEnvProvider
-        val envs = getPixiEnvironments(projectDir)
+        val envs = pixiRoots.flatMap { getPixiEnvironments(it) }
         if (envs.isEmpty()) {
             thisLogger().info("No Pixi environments with Python found in project ${project.name}. Skipping Pixi SDK setup.")
             return
@@ -39,23 +35,25 @@ class PixiStartupActivity : ProjectActivity {
 
         ApplicationManager.getApplication().invokeLater {
             ApplicationManager.getApplication().runWriteAction {
-                excludePixiDirectory(project, pixiDir)
+                pixiRoots.forEach { excludePixiDirectory(project, File(it, ".pixi")) }
 
                 thisLogger().info("Loading Pixi SDKs for project: ${project.name}")
-                // Add all found environments as SDKs
                 val addedSdks = envs.map { (env, versionString) ->
                     addPythonSdk(project, env, versionString)
                 }
                 thisLogger().info("Added Pixi SDKs for project: ${project.name}: ${addedSdks.joinToString { it.name }}")
 
                 val currentSdk = ProjectRootManager.getInstance(project).projectSdk
-                if (currentSdk?.homePath?.startsWith(FileUtil.toSystemIndependentName(pixiDir.absolutePath)) == true) {
+                val isAlreadyPixiSdk = currentSdk?.homePath?.let { homePath ->
+                    pixiRoots.any { root ->
+                        homePath.startsWith(FileUtil.toSystemIndependentName(File(root, ".pixi").absolutePath))
+                    }
+                } == true
+                if (isAlreadyPixiSdk) {
                     thisLogger().info("Project '${project.name}' is already using a Pixi SDK: ${currentSdk.name}")
-                    // Already has current .pixi env registered
                     return@runWriteAction
                 }
 
-                // Set the 'default' environment as project SDK if it exists, otherwise the first one.
                 if (addedSdks.isNotEmpty()) {
                     val defaultSdk = addedSdks.find { it.name.endsWith("-pixi-default") } ?: addedSdks.first()
                     ProjectRootManager.getInstance(project).projectSdk = defaultSdk
@@ -66,45 +64,60 @@ class PixiStartupActivity : ProjectActivity {
     }
 
     /**
-     * Exclude the .pixi directory from the main module using a single write action.
+     * Finds all content root directories (across all modules) that contain a .pixi directory.
+     */
+    private fun findPixiRoots(project: Project): List<File> {
+        val candidates = mutableListOf<File>()
+
+        project.basePath?.let { File(it) }?.also { candidates.add(it) }
+
+        ModuleManager.getInstance(project).modules.flatMapTo(candidates) { module ->
+            ModuleRootManager.getInstance(module).contentRoots.mapNotNull { vRoot ->
+                vRoot.path.let { File(it) }
+            }
+        }
+
+        return candidates.distinct().filter { File(it, ".pixi").exists() }
+    }
+
+    /**
+     * Excludes the given .pixi directory from whichever content entries contain it.
      */
     private fun excludePixiDirectory(project: Project, pixiDir: File) {
-        val moduleManager = ModuleManager.getInstance(project)
-        val modules = moduleManager.modules
-        if (modules.isEmpty()) {
-            thisLogger().warn("No modules found in project ${project.name}. Cannot exclude .pixi directory.")
+        val pixiVFile = LocalFileSystem.getInstance().findFileByIoFile(pixiDir) ?: run {
+            thisLogger().warn(".pixi directory not found in VFS: ${pixiDir.absolutePath}. Could not exclude.")
             return
         }
 
-        val mainModule = modules[0]
-        val moduleRootManager = ModuleRootManager.getInstance(mainModule)
-        val modifiableModel = moduleRootManager.modifiableModel
-        val contentEntries = modifiableModel.contentEntries
-        val pixiVFile = LocalFileSystem.getInstance().findFileByIoFile(pixiDir)
-        if (pixiVFile != null) {
-            contentEntries.forEach { it.addExcludeFolder(pixiVFile.url) }
-            modifiableModel.commit()
-            thisLogger().info("Marked .pixi directory as excluded in main module.")
-        } else {
-            modifiableModel.dispose()
-            thisLogger().warn(".pixi directory not found in VFS. Could not exclude.")
+        ModuleManager.getInstance(project).modules.forEach { module ->
+            val rootManager = ModuleRootManager.getInstance(module)
+            val modifiableModel = rootManager.modifiableModel
+            var modified = false
+            modifiableModel.contentEntries.forEach { entry ->
+                val entryFile = entry.file ?: return@forEach
+                if (VfsUtilCore.isAncestor(entryFile, pixiVFile, false)) {
+                    entry.addExcludeFolder(pixiVFile.url)
+                    modified = true
+                }
+            }
+            if (modified) {
+                modifiableModel.commit()
+                thisLogger().info("Marked ${pixiDir.absolutePath} as excluded in module '${module.name}'.")
+            } else {
+                modifiableModel.dispose()
+            }
         }
     }
 
     /**
-     * List all Pixi environments in the .pixi/envs folder and return (envName, pythonPath, versionString) triples for those with Python installed.
-     * Now uses PyPixiEnvProvider for discovery.
+     * Returns (PyPixiEnv, versionString) pairs for all Pixi environments with Python in the given root dir.
      */
     private fun getPixiEnvironments(projectDir: File): List<Pair<PyPixiEnv, String>> {
         val pySdkType = PythonSdkType.getInstance()
         return PyPixiEnvProvider().getEnvs(projectDir).mapNotNull { env ->
             val pythonPath = FileUtil.toSystemIndependentName(env.pythonExecutable.absolutePath)
             val version = try { pySdkType.getVersionString(pythonPath) } catch (_: Exception) { null }
-            if (!version.isNullOrBlank()) {
-                Pair(env, version)
-            } else {
-                null
-            }
+            if (!version.isNullOrBlank()) Pair(env, version) else null
         }
     }
 

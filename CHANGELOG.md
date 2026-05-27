@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Support for multi-root projects: the plugin now detects and registers Pixi environments from all content roots, not just the project root
+- PyCharm 2026 compatibility for Pixi SDK path recognition
+
+### Fixed
+
+- `.pixi` directory is now correctly excluded per content root in multi-module projects
+
 ## [0.0.5] - 2026-04-08
 
 ### Modified
