@@ -6,6 +6,7 @@ import com.jetbrains.python.sdk.flavors.PythonSdkFlavor
 import java.nio.file.Files
 import java.nio.file.Path
 
+@Suppress("UnstableApiUsage")
 object PyPixiEnvSdkFlavor : CPythonSdkFlavor<PyPixiFlavorData>() {
     // override fun getIcon(): IconLoader.getIcon("/icons/pixi.svg", javaClass)
     override fun getFlavorDataClass(): Class<PyPixiFlavorData> = PyPixiFlavorData::class.java
@@ -15,7 +16,7 @@ object PyPixiEnvSdkFlavor : CPythonSdkFlavor<PyPixiFlavorData>() {
 
     /* Pycharm 2025 version */
     override fun isValidSdkPath(pythonBinaryPath: String): Boolean =
-        super.isValidSdkPath(pythonBinaryPath) && pythonBinaryPath.isPixiEnvPath()
+        isValidSdkPath(Path.of(pythonBinaryPath))
 
     /* Pycharm 2026 version */
     fun isValidSdkPath(pythonBinaryPath: Path): Boolean =
@@ -23,7 +24,9 @@ object PyPixiEnvSdkFlavor : CPythonSdkFlavor<PyPixiFlavorData>() {
 }
 
 internal class PixiEnvSdkFlavorProvider : PythonFlavorProvider {
-    fun getFlavor(p0: Boolean): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
-
+    /* Pycharm 2025 version */
     override fun getFlavor(): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
+
+    /* Pycharm 2026 version */
+    fun getFlavor(p0: Boolean): PythonSdkFlavor<*>  = PyPixiEnvSdkFlavor
 }

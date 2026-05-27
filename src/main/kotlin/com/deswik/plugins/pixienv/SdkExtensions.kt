@@ -17,7 +17,7 @@ val Sdk.pixiEnvironmentName: String
         // SDK paths are always system-independent (use forward slashes)
         val homePath = homePath ?: return "default"
 
-        val envNameRegex = """\\.pixi/envs/([^/]+)""".toRegex()
+        val envNameRegex = """/\.pixi/envs/([^/]+)""".toRegex()
         val matchResult = envNameRegex.find(homePath)
 
         return matchResult?.groupValues?.get(1) ?: "default"
