@@ -8,7 +8,8 @@ class PyPixiEnvProvider {
      * Returns a list of PyPixiEnv (envName + pythonExecutable) for all valid environments with a python executable.
      */
     fun getEnvs(projectDir: File): List<PyPixiEnv> {
-        val pixiManifest = File(projectDir, "pixi.toml")
+        val pixiManifest = File(projectDir, "pixi.toml").takeIf { it.exists() }
+            ?: File(projectDir, "pyproject.toml").takeIf { it.exists() }
         val pixiEnvsDir = File(projectDir, ".pixi/envs")
         if (!pixiEnvsDir.exists() || !pixiEnvsDir.isDirectory) return emptyList()
         return pixiEnvsDir.listFiles()

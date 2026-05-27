@@ -16,6 +16,8 @@ import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
 import com.jetbrains.python.sdk.flavors.PyFlavorAndData
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class PixiStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -27,19 +29,22 @@ class PixiStartupActivity : ProjectActivity {
             return
         }
 
-        val envs = pixiRoots.flatMap { getPixiEnvironments(it) }
+        val envs = withContext(Dispatchers.IO) {
+            pixiRoots.flatMap { root -> getPixiEnvironments(root).map { Triple(root, it.first, it.second) } }
+        }
         if (envs.isEmpty()) {
             thisLogger().info("No Pixi environments with Python found in project ${project.name}. Skipping Pixi SDK setup.")
             return
         }
 
         ApplicationManager.getApplication().invokeLater {
+            if (project.isDisposed) return@invokeLater
             ApplicationManager.getApplication().runWriteAction {
                 pixiRoots.forEach { excludePixiDirectory(project, File(it, ".pixi")) }
 
                 thisLogger().info("Loading Pixi SDKs for project: ${project.name}")
-                val addedSdks = envs.map { (env, versionString) ->
-                    addPythonSdk(project, env, versionString)
+                val addedSdks = envs.map { (root, env, versionString) ->
+                    addPythonSdk(project, env, versionString, root)
                 }
                 thisLogger().info("Added Pixi SDKs for project: ${project.name}: ${addedSdks.joinToString { it.name }}")
 
@@ -92,19 +97,24 @@ class PixiStartupActivity : ProjectActivity {
         ModuleManager.getInstance(project).modules.forEach { module ->
             val rootManager = ModuleRootManager.getInstance(module)
             val modifiableModel = rootManager.modifiableModel
-            var modified = false
-            modifiableModel.contentEntries.forEach { entry ->
-                val entryFile = entry.file ?: return@forEach
-                if (VfsUtilCore.isAncestor(entryFile, pixiVFile, false)) {
-                    entry.addExcludeFolder(pixiVFile.url)
-                    modified = true
+            try {
+                var modified = false
+                modifiableModel.contentEntries.forEach { entry ->
+                    val entryFile = entry.file ?: return@forEach
+                    if (VfsUtilCore.isAncestor(entryFile, pixiVFile, false)) {
+                        entry.addExcludeFolder(pixiVFile.url)
+                        modified = true
+                    }
                 }
-            }
-            if (modified) {
-                modifiableModel.commit()
-                thisLogger().info("Marked ${pixiDir.absolutePath} as excluded in module '${module.name}'.")
-            } else {
+                if (modified) {
+                    modifiableModel.commit()
+                    thisLogger().info("Marked ${pixiDir.absolutePath} as excluded in module '${module.name}'.")
+                } else {
+                    modifiableModel.dispose()
+                }
+            } catch (e: Exception) {
                 modifiableModel.dispose()
+                thisLogger().warn("Failed to exclude ${pixiDir.absolutePath} in module '${module.name}': ${e.message}")
             }
         }
     }
@@ -124,7 +134,7 @@ class PixiStartupActivity : ProjectActivity {
     /**
      * Add a Python SDK for the given environment if not already present. Returns the SDK instance or null.
      */
-    private fun addPythonSdk(project: Project, env: PyPixiEnv, version: String): Sdk {
+    private fun addPythonSdk(project: Project, env: PyPixiEnv, version: String, envRoot: File): Sdk {
         val projectName = project.name
         val pySdkType = PythonSdkType.getInstance()
         val jdkTable = ProjectJdkTable.getInstance()
@@ -163,7 +173,7 @@ class PixiStartupActivity : ProjectActivity {
 
             @Suppress("UnstableApiUsage")
             try {
-                additionalData.associatedModulePath = project.basePath
+                additionalData.associatedModulePath = envRoot.path
             }
             catch (e: Throwable) {
                 thisLogger().warn("associateModulePath skipped due to missing or changed PyCharm internals: ${e.javaClass.simpleName}: ${e.message}")
