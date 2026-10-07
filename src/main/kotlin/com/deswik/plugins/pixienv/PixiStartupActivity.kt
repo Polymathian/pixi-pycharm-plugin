@@ -2,7 +2,9 @@ package com.deswik.plugins.pixienv
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.module.ModuleWithNameAlreadyExists
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.projectRoots.ProjectJdkTable
@@ -14,6 +16,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.jetbrains.python.sdk.PythonSdkAdditionalData
 import com.jetbrains.python.sdk.PythonSdkType
+import com.jetbrains.python.sdk.PythonSdkUpdater
 import com.jetbrains.python.sdk.flavors.PyFlavorAndData
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -37,10 +40,18 @@ class PixiStartupActivity : ProjectActivity {
             return
         }
 
+        val workspaceNames = withContext(Dispatchers.IO) {
+            pixiRoots.associateWith { PixiExecutor(it.path).workspaceName() }
+        }
+
         ApplicationManager.getApplication().invokeLater {
             if (project.isDisposed) return@invokeLater
             ApplicationManager.getApplication().runWriteAction {
                 pixiRoots.forEach { excludePixiDirectory(project, File(it, ".pixi")) }
+
+                workspaceNames.forEach { (root, workspaceName) ->
+                    if (workspaceName != null) syncModuleNameWithWorkspace(project, root, workspaceName)
+                }
 
                 thisLogger().info("Loading Pixi SDKs for project: ${project.name}")
                 val addedSdks = envs.map { (root, env, versionString) ->
@@ -132,6 +143,48 @@ class PixiStartupActivity : ProjectActivity {
     }
 
     /**
+     * Finds the module whose content root is exactly the given directory.
+     */
+    private fun findModuleForContentRoot(project: Project, root: File): Module? {
+        val targetPath = FileUtil.toSystemIndependentName(root.absolutePath)
+        return ModuleManager.getInstance(project).modules.find { module ->
+            ModuleRootManager.getInstance(module).contentRoots.any { FileUtil.pathsEqual(it.path, targetPath) }
+        }
+    }
+
+    /**
+     * Renames the module rooted at [root] to match the Pixi workspace name, if it doesn't already.
+     *
+     * Module names are normally derived from the directory/.iml file name, which varies between clones
+     * of the same repo. Pinning the module name to the Pixi workspace name instead keeps committed run
+     * configurations that reference the module by name (IS_MODULE_SDK) working across differently-named
+     * clones.
+     */
+    private fun syncModuleNameWithWorkspace(project: Project, root: File, workspaceName: String) {
+        val moduleManager = ModuleManager.getInstance(project)
+        val module = findModuleForContentRoot(project, root) ?: return
+        if (module.name == workspaceName) return
+
+        if (moduleManager.findModuleByName(workspaceName) != null) {
+            thisLogger().warn(
+                "Cannot rename module '${module.name}' to Pixi workspace name '$workspaceName': " +
+                    "a module with that name already exists."
+            )
+            return
+        }
+
+        val modifiableModel = moduleManager.getModifiableModel()
+        try {
+            modifiableModel.renameModule(module, workspaceName)
+            modifiableModel.commit()
+            thisLogger().info("Renamed module '${module.name}' to '$workspaceName' to match the Pixi workspace name.")
+        } catch (e: ModuleWithNameAlreadyExists) {
+            modifiableModel.dispose()
+            thisLogger().warn("Failed to rename module '${module.name}' to '$workspaceName': ${e.message}")
+        }
+    }
+
+    /**
      * Add a Python SDK for the given environment if not already present. Returns the SDK instance or null.
      */
     private fun addPythonSdk(project: Project, env: PyPixiEnv, version: String, envRoot: File): Sdk {
@@ -183,6 +236,11 @@ class PixiStartupActivity : ProjectActivity {
             modificator.commitChanges()
         }
         jdkTable.addJdk(sdk)
+
+        // The platform's own one-shot PythonSdkUpdateProjectActivity only refreshes SDKs a module
+        // already uses at the time it runs; on a fresh clone that race can lose, leaving this SDK
+        // created but never refreshed/set-up until an IDE restart. Explicitly schedule it. See PY-88315.
+        PythonSdkUpdater.scheduleUpdate(sdk, project)
 
         thisLogger().info("SUCCESS: Created Python SDK: ${sdk.name}")
         return sdk

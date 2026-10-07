@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- `PixiDirectoryProjectConfigurator` to run Pixi SDK detection during initial project configuration, before any other startup activity. On a fresh clone this avoids a race where PyCharm's own fallback could assign a system-wide interpreter before the Pixi SDK was set up
+- Module names are now synced to match the Pixi workspace name, so committed run configurations that reference a module by name keep working across differently-named clones
+
+### Fixed
+
+- SDK could be created but left unconfigured until an IDE restart, due to a race with the platform's own SDK update activity on a fresh clone
+
 ## [0.0.6] - 2026-05-28
 
 ### Added

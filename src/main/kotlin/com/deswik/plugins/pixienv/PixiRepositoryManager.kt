@@ -4,7 +4,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.jetbrains.python.errorProcessing.PyResult
 import com.jetbrains.python.packaging.PyPackageVersion
-import com.jetbrains.python.packaging.PyPackageVersionNormalizer
 import com.jetbrains.python.packaging.PyRequirement
 import com.jetbrains.python.packaging.common.PythonPackageDetails
 import com.jetbrains.python.packaging.common.PythonRepositoryPackageSpecification
@@ -19,6 +18,9 @@ Because PythonRepositoryManager is marked as unstable, it does not make too much
 class PixiRepositoryManager(override val project: Project, val sdk: Sdk) : PythonRepositoryManager {
     override val repositories: List<PyPackageRepository>
         get() = emptyList()
+
+
+    fun getAllRepositories(): List<PyPackageRepository> = repositories
 
     override fun allPackages(): Set<String> {
         return emptySet()
@@ -41,7 +43,7 @@ class PixiRepositoryManager(override val project: Project, val sdk: Sdk) : Pytho
     }
 
     override suspend fun getLatestVersion(packageName: String, repository: PyPackageRepository?): PyPackageVersion? {
-        return PyPackageVersionNormalizer.normalize("")
+        return null
     }
 
     override suspend fun getVersions(packageName: String, repository: PyPackageRepository?): List<String>? {

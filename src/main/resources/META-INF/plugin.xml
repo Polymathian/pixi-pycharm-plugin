@@ -9,6 +9,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.deswik.plugins.pixienv.PixiStartupActivity" />
+        <directoryProjectConfigurator implementation="com.deswik.plugins.pixienv.PixiDirectoryProjectConfigurator" order="first" />
     </extensions>
     <extensions defaultExtensionNs="Pythonid">
         <pythonFlavorProvider implementation="com.deswik.plugins.pixienv.PixiEnvSdkFlavorProvider" />

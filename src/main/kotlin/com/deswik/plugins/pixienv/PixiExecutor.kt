@@ -1,5 +1,6 @@
 package com.deswik.plugins.pixienv
 
+import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.projectRoots.Sdk
 import com.jetbrains.python.errorProcessing.PyResult
 import com.jetbrains.python.packaging.conda.CondaPackage
@@ -15,9 +16,9 @@ data class PixiCommandResult(
 class PixiExecutor {
 
     private val projectDir: File
-    private val sdk: Sdk
+    private val sdk: Sdk?
 
-    constructor(projectDir: String?, sdk: Sdk) {
+    constructor(projectDir: String?, sdk: Sdk? = null) {
         this.projectDir = File(projectDir ?: error("projectDir is not set"))
         this.sdk = sdk
     }
@@ -33,9 +34,10 @@ class PixiExecutor {
 
     @Suppress("UnstableApiUsage")
     fun listPackages(): PyResult<List<CondaPackage>> {
+        val environment = sdk?.pixiEnvironmentName ?: error("sdk is not set")
         val result = runPixiCommand(
             "list",
-            "--environment", sdk.pixiEnvironmentName
+            "--environment", environment
         )
         return if (result.isSuccess) {
             val packages = parsePixiListOutput(result.output)
@@ -59,6 +61,20 @@ class PixiExecutor {
             PyResult.success(Unit)
         } else {
             PyResult.localizedError("Failed to install package $name: ${result.output}")
+        }
+    }
+
+    /**
+     * Gets the Pixi workspace name via `pixi workspace name get`.
+     * Returns null if pixi isn't available, the manifest has no name, or the command fails.
+     */
+    fun workspaceName(): String? {
+        return try {
+            val result = runPixiCommand("workspace", "name", "get")
+            result.output.trim().takeIf { result.isSuccess && it.isNotBlank() }
+        } catch (e: Exception) {
+            thisLogger().warn("Failed to get Pixi workspace name for ${projectDir.absolutePath}: ${e.message}")
+            null
         }
     }
 
