@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-10-07
+
 ### Added
 
 - `PixiDirectoryProjectConfigurator` to run Pixi SDK detection during initial project configuration, before any other startup activity. On a fresh clone this avoids a race where PyCharm's own fallback could assign a system-wide interpreter before the Pixi SDK was set up
@@ -72,7 +74,8 @@ This also avoids using internal extension points, improving future maintainabili
 - Basic functionality - detect all pixi environments in the current project, and add them to PyCharm
 - GitHub Actions to automate testing and deployment
 
-[Unreleased]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.6...HEAD
+[Unreleased]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.7...HEAD
+[0.0.7]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.6...0.0.7
 [0.0.6]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.5...0.0.6
 [0.0.5]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.4...0.0.5
 [0.0.4]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.3...0.0.4
