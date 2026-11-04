@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- PyCharm 2026.2 compatibility: the dynamically created package manager now implements the abstract members that were added or renamed in 2026.2 (`getDependenciesFilesRelativePaths`, `syncLockedCommand`, internal `getRepositoryManager`), which previously threw `UnsupportedOperationException` from the dependencies status bar widget and package initialisation
+
 ## [0.0.7] - 2026-10-07
 
 ### Added
