@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-11-11
+
 ### Changed
 
 - Compatibility is now capped at PyCharm 2026.3 (`until-build="263.*"`). PyCharm 2027.1 introduces native pixi support, so the plugin is no longer required there, except for couple of module-naming issues with runtime configurations.
@@ -83,7 +85,8 @@ This also avoids using internal extension points, improving future maintainabili
 - Basic functionality - detect all pixi environments in the current project, and add them to PyCharm
 - GitHub Actions to automate testing and deployment
 
-[Unreleased]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.7...HEAD
+[Unreleased]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.8...HEAD
+[0.0.8]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.7...0.0.8
 [0.0.7]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.6...0.0.7
 [0.0.6]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.5...0.0.6
 [0.0.5]: https://github.com/Polymathian/pixi-pycharm-plugin/compare/0.0.4...0.0.5
