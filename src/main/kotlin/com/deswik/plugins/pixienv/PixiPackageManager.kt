@@ -14,6 +14,7 @@ import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.InvocationHandlerAdapter
 import net.bytebuddy.matcher.ElementMatchers
 import java.lang.reflect.InvocationHandler
+import java.nio.file.Path
 
 @Suppress("UnstableApiUsage")
 class PixiPackageManagerProvider : PythonPackageManagerProvider {
@@ -52,13 +53,15 @@ class PixiPackageManagerProvider : PythonPackageManagerProvider {
         val pixiExec = PixiExecutor(project.basePath, sdk)
         val repositoryManager = PixiRepositoryManager(project, sdk)
 
-        // InvocationHandler for abstract methods
+        // InvocationHandler for abstract methods. PyCharm 2026.2 renamed syncCommand to syncLockedCommand,
+        // made getRepositoryManager internal (hence the mangled JVM name) and added getDependenciesFilesRelativePaths.
         val handler = InvocationHandler { _, method, _ ->
             when (method.name) {
-                "getRepositoryManager" -> repositoryManager
-                "syncCommand" -> pixiExec.install()
+                "getRepositoryManager", "getRepositoryManager\$intellij_python_community_impl" -> repositoryManager
+                "syncCommand", "syncLockedCommand" -> pixiExec.install()
                 "loadPackagesCommand" -> pixiExec.listPackages()
                 "loadOutdatedPackagesCommand" -> PyResult.success(emptyList<PythonOutdatedPackage>())
+                "getDependenciesFilesRelativePaths" -> emptyList<Path>()
 
                 else -> throw UnsupportedOperationException("Method ${method.name} not implemented")
             }

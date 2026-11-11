@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Compatibility is now capped at PyCharm 2026.3 (`until-build="263.*"`). PyCharm 2027.1 introduces native pixi support, so the plugin is no longer required there, except for couple of module-naming issues with runtime configurations.
+
+### Fixed
+
+- PyCharm 2026.2 compatibility: the dynamically created package manager now implements the abstract members that were added or renamed in 2026.2 (`getDependenciesFilesRelativePaths`, `syncLockedCommand`, internal `getRepositoryManager`), which previously threw `UnsupportedOperationException` from the dependencies status bar widget and package initialisation
+- PyCharm 2026.3 compatibility: the repository manager no longer hard-links to inherited interface default methods (e.g. `PythonRepositoryManager.hasPackageSnapshot`, removed in 2026.3), which would otherwise fail with `NoSuchMethodError`
+
 ## [0.0.7] - 2026-10-07
 
 ### Added

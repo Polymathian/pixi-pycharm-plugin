@@ -16,6 +16,13 @@ version = providers.gradleProperty("pluginVersion").get()
 // Set the JVM language level used to build the project.
 kotlin {
     jvmToolchain(21)
+
+    compilerOptions {
+        // Don't generate delegating bridges (invokespecial Interface.super.method()) for inherited interface
+        // default methods. Such bridges hard-link to platform interface members and break with NoSuchMethodError
+        // once the platform removes them (e.g. PythonRepositoryManager.hasPackageSnapshot in 2026.3).
+        jvmDefault.set(org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode.NO_COMPATIBILITY)
+    }
 }
 
 // Configure project's dependencies
@@ -87,6 +94,7 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
+            untilBuild = providers.gradleProperty("pluginUntilBuild")
         }
     }
 
